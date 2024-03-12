@@ -16,6 +16,7 @@ class Piano extends React.Component {
     renderNoteLabel: PropTypes.func,
     className: PropTypes.string,
     disabled: PropTypes.bool,
+    disabledNotes: PropTypes.arrayOf(PropTypes.number.isRequired),
     width: PropTypes.number,
     keyWidthToHeight: PropTypes.number,
     keyboardShortcuts: PropTypes.arrayOf(

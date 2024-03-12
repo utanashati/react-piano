@@ -6,7 +6,7 @@ import Keyboard from './Keyboard';
 
 class ControlledPiano extends React.Component {
   static propTypes = {
-    noteRange: PropTypes.object.isRequired,
+    noteRange: noteRangePropType,
     activeNotes: PropTypes.arrayOf(PropTypes.number.isRequired).isRequired,
     playNote: PropTypes.func.isRequired,
     stopNote: PropTypes.func.isRequired,
@@ -15,6 +15,7 @@ class ControlledPiano extends React.Component {
     renderNoteLabel: PropTypes.func.isRequired,
     className: PropTypes.string,
     disabled: PropTypes.bool,
+    disabledNotes: disabledNotesPropType,
     width: PropTypes.number,
     keyWidthToHeight: PropTypes.number,
     keyboardShortcuts: PropTypes.arrayOf(
@@ -120,7 +121,7 @@ class ControlledPiano extends React.Component {
   };
 
   onPlayNoteInput = (midiNumber) => {
-    if (this.props.disabled) {
+    if (this.props.disabled || this.props.disabledNotes?.includes(midiNumber)) {
       return;
     }
     // Pass in previous activeNotes for recording functionality
@@ -128,7 +129,7 @@ class ControlledPiano extends React.Component {
   };
 
   onStopNoteInput = (midiNumber) => {
-    if (this.props.disabled) {
+    if (this.props.disabled || this.props.disabledNotes?.includes(midiNumber)) {
       return;
     }
     // Pass in previous activeNotes for recording functionality
@@ -174,6 +175,7 @@ class ControlledPiano extends React.Component {
           activeNotes={this.props.activeNotes}
           className={this.props.className}
           disabled={this.props.disabled}
+          disabledNotes={this.props.disabledNotes}
           width={this.props.width}
           keyWidthToHeight={this.props.keyWidthToHeight}
           gliss={this.state.isMouseDown}
@@ -181,6 +183,47 @@ class ControlledPiano extends React.Component {
           renderNoteLabel={this.renderNoteLabel}
         />
       </div>
+    );
+  }
+}
+
+function isNaturalMidiNumber(value) {
+  if (typeof value !== 'number') {
+    return false;
+  }
+  return MidiNumbers.NATURAL_MIDI_NUMBERS.includes(value);
+}
+
+function noteRangePropType(props, propName, componentName) {
+  const { first, last } = props[propName];
+  if (!first || !last) {
+    return new Error(
+      `Invalid prop ${propName} supplied to ${componentName}. ${propName} must be an object with .first and .last values.`,
+    );
+  }
+  if (!isNaturalMidiNumber(first) || !isNaturalMidiNumber(last)) {
+    return new Error(
+      `Invalid prop ${propName} supplied to ${componentName}. ${propName} values must be valid MIDI numbers, and should not be accidentals (sharp or flat notes).`,
+    );
+  }
+  if (first >= last) {
+    return new Error(
+      `Invalid prop ${propName} supplied to ${componentName}. ${propName}.first must be smaller than ${propName}.last.`,
+    );
+  }
+}
+
+// PropTypes.arrayOf(PropTypes.number.isRequired) already checked in Piano component
+function disabledNotesPropType(props, propName, componentName) {
+  const disabledNotes = props[propName];
+
+  function isInNoteRange(value) {
+    return props.noteRange.first < value < props.noteRange.last;
+  }
+
+  if (disabledNotes && !disabledNotes.every(isInNoteRange)) {
+    return new Error(
+      `Invalid prop ${propName} supplied to ${componentName}. ${propName} values must be valid MIDI numbers inside the given note range.`,
     );
   }
 }
